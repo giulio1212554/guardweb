@@ -41,12 +41,7 @@ export interface AuditScanResult {
   score: number;
   grade: "A" | "B" | "C" | "D" | "F";
   headers: HeaderCheck[];
-  https: {
-    redirects: boolean;
-    validCert: boolean;
-    expiresAt?: string;
-    daysLeft?: number;
-  };
+  https: { redirects: boolean; validCert: boolean; expiresAt?: string; daysLeft?: number };
   dns: {
     records: DnsRecord[];
     spf: { present: boolean; record?: string; status: string };
@@ -98,4 +93,31 @@ export interface RateLimitEntry {
   key: string;
   count: number;
   windowStart: number;
+}
+
+export interface SavedReport {
+  id: string;
+  userId: string;
+  domain: string;
+  score?: number;
+  grade?: string;
+  leakFindings: Finding[];
+  auditIssues: Finding[];
+  summary: string;
+  createdAt: string;
+}
+
+export interface AlertPreferences {
+  userId: string;
+  email: string;
+  enabled: boolean;
+  criticalImmediate: boolean;
+  weeklyDigest: boolean;
+  scoreThreshold: number;
+}
+
+export interface OnboardingState {
+  step: "domain" | "verify" | "scanning" | "results" | "done";
+  domain?: string;
+  verified?: boolean;
 }

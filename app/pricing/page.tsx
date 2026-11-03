@@ -4,15 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Shield } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const plans = [
   {
-    id: "pro", name: "Pro", price: "9", description: "Per freelancers e piccoli siti",
-    features: ["Monitoraggio settimanale", "1 dominio", "Scan Leak + Audit", "Generatore security.txt e Privacy Policy"],
+    id: "pro" as const, name: "Pro", price: "9", description: "Per freelancers e piccoli siti",
+    features: ["Monitoraggio settimanale", "1 dominio", "Scan Leak + Audit", "Storico report", "Alert email settimanali"],
   },
   {
-    id: "business", name: "Business", price: "29", description: "Per agenzie e PMI",
-    features: ["Tutto di Pro", "Fino a 5 domini", "Report PDF", "Alert email", "Supporto prioritario"],
+    id: "business" as const, name: "Business", price: "29", description: "Per agenzie e PMI",
+    features: ["Tutto di Pro", "Fino a 5 domini", "Export PDF completi", "Alert email immediati su critical", "Supporto prioritario"],
     highlighted: true,
   },
 ];
@@ -20,19 +21,29 @@ const plans = [
 export default function PricingPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const router = useRouter();
 
-  const handleCheckout = async (planId: string) => {
+  const handleCheckout = async (planId: "pro" | "business") => {
     setLoading(planId);
-    if (process.env.NEXT_PUBLIC_DEV_MODE === "true") {
-      await new Promise((r) => setTimeout(r, 600));
-      document.cookie = `gw_dev_session=${planId}-user; path=/; max-age=86400`;
-      setToast(`Piano ${planId} attivato (simulazione DEV)`);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planId, mock: process.env.NEXT_PUBLIC_DEV_MODE === "true" }),
+      });
+      const data = await res.json();
+      if (data.url) { window.location.href = data.url; return; }
+      if (data.mock || data.ok) {
+        setToast(data.message || "Piano attivato");
+        setTimeout(() => router.push(data.redirect || "/onboarding"), 800);
+        return;
+      }
+      setToast(data.error || "Errore checkout");
+    } catch {
+      setToast("Errore di rete");
+    } finally {
       setLoading(null);
-      setTimeout(() => { window.location.href = "/dashboard"; }, 1000);
-      return;
     }
-    setToast("Stripe non configurato. Usa un codice demo.");
-    setLoading(null);
   };
 
   return (
@@ -48,7 +59,7 @@ export default function PricingPage() {
       <main className="container mx-auto px-4 py-12">
         <div className="text-center mb-12">
           <h1 className="text-3xl font-bold">Piani semplici e trasparenti</h1>
-          <p className="mt-2 text-muted-foreground">Nessun piano gratuito. Prova con un codice demo.</p>
+          <p className="mt-2 text-muted-foreground">Dopo il pagamento parti dall&apos;onboarding in 3 minuti.</p>
         </div>
         <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           {plans.map((plan) => (
@@ -69,7 +80,7 @@ export default function PricingPage() {
               </CardContent>
               <CardFooter>
                 <Button className="w-full" variant={plan.highlighted ? "default" : "outline"} disabled={!!loading} onClick={() => handleCheckout(plan.id)}>
-                  {loading === plan.id ? "Attivazione..." : `Scegli ${plan.name}`}
+                  {loading === plan.id ? "Attivazione…" : `Scegli ${plan.name}`}
                 </Button>
               </CardFooter>
             </Card>
