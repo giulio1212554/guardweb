@@ -24,55 +24,74 @@ export function DomainVerifyWizard({ domain: initialDomain, onVerified, isDevMod
   const [copied, setCopied] = useState(false);
 
   const start = async () => {
-    setLoading(true); setError(null);
+    setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/domains/verify", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "start", domain: domain.trim().toLowerCase() }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Errore"); return; }
-      setToken(data.token); setStatus("pending");
-    } catch { setError("Errore di rete"); }
-    finally { setLoading(false); }
+      if (!res.ok) {
+        setError(data.error || "Errore");
+        return;
+      }
+      setToken(data.token);
+      setStatus("pending");
+    } catch {
+      setError("Errore di rete");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const check = async () => {
-    setLoading(true); setError(null);
+    setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/domains/verify", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "check", domain: domain.trim().toLowerCase() }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Errore"); return; }
+      if (!res.ok) {
+        setError(data.error || "Errore");
+        return;
+      }
       if (data.verified) {
-        setStatus("verified"); setMethod(data.method);
+        setStatus("verified");
+        setMethod(data.method);
         onVerified(domain.trim().toLowerCase());
       } else {
-        setError(data.message || "Verifica non ancora rilevata.");
+        setError(data.message || "Verifica non ancora rilevata. Attendi la propagazione DNS.");
       }
-    } catch { setError("Errore di rete"); }
-    finally { setLoading(false); }
+    } catch {
+      setError("Errore di rete");
+    } finally {
+      setLoading(false);
+    }
   };
 
- pan_skip = async () => {
+  const skip = async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/domains/verify", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "skip", domain: domain.trim().toLowerCase() }),
       });
       const data = await res.json();
       if (data.verified) {
-        setStatus("verified"); setMethod("dev-skip");
+        setStatus("verified");
+        setMethod("dev-skip");
         onVerified(domain.trim().toLowerCase());
       }
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
-
-  // fix typo below - skip function
-  const skip = pan_skip;
 
   const copy = async (text: string) => {
     await navigator.clipboard.writeText(text);
@@ -85,7 +104,8 @@ export function DomainVerifyWizard({ domain: initialDomain, onVerified, isDevMod
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-lg flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" /> Verifica proprietà dominio
+            <Shield className="h-5 w-5 text-primary" />
+            Verifica proprietà dominio
           </CardTitle>
           {status === "verified" && <Badge variant="success">Verificato</Badge>}
           {status === "pending" && <Badge variant="warning">In attesa</Badge>}
@@ -97,7 +117,12 @@ export function DomainVerifyWizard({ domain: initialDomain, onVerified, isDevMod
       <CardContent className="space-y-4">
         {status === "idle" && (
           <>
-            <Input placeholder="esempio.it" value={domain} onChange={(e) => setDomain(e.target.value)} className="h-12" />
+            <Input
+              placeholder="esempio.it"
+              value={domain}
+              onChange={(e) => setDomain(e.target.value)}
+              className="h-12"
+            />
             <label className="flex items-start gap-2 text-sm text-muted-foreground">
               <input type="checkbox" className="mt-1" />
               <span>Dichiaro di essere titolare del dominio o autorizzato a scansionarlo.</span>
@@ -112,14 +137,18 @@ export function DomainVerifyWizard({ domain: initialDomain, onVerified, isDevMod
             <p className="text-sm">Aggiungi <strong>uno</strong> di questi metodi:</p>
             <div className="rounded-lg border p-3 space-y-2">
               <div className="font-medium text-sm">1. Record DNS TXT</div>
-              <code className="block text-xs bg-muted p-2 rounded break-all">guardweb-verify={token}</code>
+              <code className="block text-xs bg-muted p-2 rounded break-all">
+                guardweb-verify={token}
+              </code>
               <Button size="sm" variant="outline" onClick={() => copy(`guardweb-verify=${token}`)}>
                 <Copy className="h-3.5 w-3.5" /> {copied ? "Copiato" : "Copia"}
               </Button>
             </div>
             <div className="rounded-lg border p-3 space-y-2">
               <div className="font-medium text-sm">2. File sul sito</div>
-              <p className="text-xs text-muted-foreground">Crea <code>/.well-known/guardweb-verify.txt</code> con:</p>
+              <p className="text-xs text-muted-foreground">
+                Crea <code>/.well-known/guardweb-verify.txt</code> con il token:
+              </p>
               <code className="block text-xs bg-muted p-2 rounded break-all">{token}</code>
             </div>
             <div className="flex flex-col sm:flex-row gap-2">
@@ -127,7 +156,9 @@ export function DomainVerifyWizard({ domain: initialDomain, onVerified, isDevMod
                 {loading ? <Loader2 className="animate-spin" /> : "Ho configurato – verifica ora"}
               </Button>
               {isDevMode && (
-                <Button variant="outline" onClick={skip} disabled={loading}>Salta verifica (DEV)</Button>
+                <Button variant="outline" onClick={skip} disabled={loading}>
+                  Salta verifica (DEV)
+                </Button>
               )}
             </div>
           </div>
